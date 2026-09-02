@@ -24,7 +24,8 @@ código-fonte, características do dataset, resultados medidos e piso de ruído.
 | `evaluate.py` | avalia checkpoints **por classe**, varre resoluções de inferência e ranqueia; grava em `resultados/avaliacoes.csv` |
 | `resplit.py` | refaz o split treino/validação por bloco temporal, sem vazamento entre quadros vizinhos |
 | `examples.py` | desenha as detecções sobre imagens de validação, para inspeção visual |
-| `optical_flow.py`, `optical_flow_sparse.py` | experimentos de fluxo óptico |
+
+Em [extras/](extras/) ficam experimentos fora do pipeline (fluxo óptico).
 
 ## Uso
 
