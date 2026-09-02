@@ -4,9 +4,7 @@
     ./venv/bin/python train.py control    # baseline de comparacao
     ./venv/bin/python train.py res --imgsz 1600 --gpu-livre
 
-Sempre chamar `./venv/bin/python` por caminho absoluto: existe um ultralytics
-antigo em ~/.local que o python do sistema enxerga, e ele nao tem `cls_remap`
-(vale ~13 pontos de mAP50 em `person`). O script aborta se isso acontecer.
+Sempre chamar `./venv/bin/python` por caminho absoluto.
 
 Rodar de um `tmux` num terminal comum, nao do terminal integrado da IDE: la o
 processo herda o escopo do Electron e vira alvo do OOM killer, derrubando a IDE.

@@ -79,11 +79,11 @@ Mesma receita, mesmo split, avaliado em 1600:
 `load` e `pipe` não mudam — nenhum nome do COCO casa com eles. O `train.py`
 aborta se rodar numa versão sem `cls_remap`.
 
-Cuidado com o ambiente: existe um ultralytics 8.4.66 em
-`~/.local/lib/python3.14/site-packages` que o python do sistema enxerga, e
-`source venv/bin/activate` **não** resolve dentro de uma sessão tmux criada
-antes da ativação (ela herda o ambiente do servidor tmux). Chamar sempre
-`./venv/bin/python`.
+O 8.4.66 que estava instalado em `~/.local` foi desinstalado; a checagem de
+`cls_remap` fica como rede de segurança caso um `pip install --user` o traga de
+volta. Chamar sempre `./venv/bin/python` pelo caminho absoluto: `source
+venv/bin/activate` **não** resolve dentro de uma sessão tmux criada antes da
+ativação, porque ela herda o ambiente do servidor tmux.
 
 ### `patience` e `best.pt` são alimentados pela média das classes
 
