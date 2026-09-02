@@ -19,7 +19,7 @@ usar os 8 GB, parar a sessao grafica e passar --gpu-livre:
     sudo systemctl start gdm
 
 O porque de cada escolha de hiperparametro, os numeros que a sustentam e as
-armadilhas do Ultralytics ja verificadas estao em NOTAS_TECNICAS.md. Ler antes
+armadilhas do Ultralytics ja verificadas estao em docs/NOTAS_TECNICAS.md. Ler antes
 de mexer -- varias delas parecem inofensivas e nao sao.
 """
 
@@ -71,7 +71,7 @@ VARIANTES = {
 
 
 def vram_estimada(imgsz: int, rect: bool, batch: int) -> float:
-    """Ajuste linear sobre picos medidos; erro < 0.02 GB. Ver NOTAS_TECNICAS.md."""
+    """Ajuste linear sobre picos medidos; erro < 0.02 GB. Ver docs/NOTAS_TECNICAS.md."""
     altura = round(imgsz * 9 / 16 / 32) * 32 if rect else imgsz
     return (5.20 * (imgsz * altura / 1e6) - 1.04) * batch / 4
 

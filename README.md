@@ -11,7 +11,7 @@ operações.
 
 ## Documentação
 
-**[NOTAS_TECNICAS.md](NOTAS_TECNICAS.md)** — achados verificados com os números
+**[docs/NOTAS_TECNICAS.md](docs/NOTAS_TECNICAS.md)** — achados verificados com os números
 que os sustentam: limites de VRAM, armadilhas do Ultralytics já identificadas no
 código-fonte, características do dataset, resultados medidos e piso de ruído.
 **Ler antes de mexer nos hiperparâmetros.**
@@ -56,4 +56,4 @@ Para refazer o split (reversível com `--reverter`):
 - 15 GB de RAM divididos com a IDE.
 
 Os detalhes e os números por trás desses limites estão em
-[NOTAS_TECNICAS.md](NOTAS_TECNICAS.md).
+[docs/NOTAS_TECNICAS.md](docs/NOTAS_TECNICAS.md).
