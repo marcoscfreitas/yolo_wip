@@ -1,0 +1,34 @@
+# ---------------------------------------------------------------------------
+# DADOS SENSIVEIS DA EMPRESA -- nunca versionar
+# Imagens, videos, anotacoes e qualquer saida derivada delas.
+# ---------------------------------------------------------------------------
+yolo_dataset/
+export_cvat/
+operation/
+videos/
+sem_carga/
+examples/
+runs/
+treinamentos/
+
+# Pesos: binarios grandes e derivados dos dados sensiveis
+*.pt
+*.onnx
+*.engine
+*.torchscript
+
+# Saidas locais de execucao (avaliacoes.log tem caminhos absolutos da maquina)
+resultados/
+
+# ---------------------------------------------------------------------------
+# Ambiente
+# ---------------------------------------------------------------------------
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Caches do Ultralytics / OpenCV
+*.cache
+*.npy
