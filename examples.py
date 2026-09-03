@@ -28,7 +28,7 @@ import yaml
 from ultralytics import YOLO
 
 # BGR
-CORES = {0: (255, 140, 0), 1: (60, 220, 60), 2: (0, 215, 255)}
+CORES = {0: (255, 0, 0), 1: (0, 0, 255), 2: (0, 255, 0)}
 NOMES = {0: "load", 1: "person", 2: "pipe"}
 BRANCO = (255, 255, 255)
 
@@ -142,16 +142,27 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--data", default="yolo_dataset/data.yaml")
-    ap.add_argument("--n", type=int, default=8)
+    ap.add_argument("--n", type=int, default=0,
+                    help="numero de imagens para escolher (padrao: todas)")
     ap.add_argument("--conf", type=float, default=0.25)
     ap.add_argument("--out", default="examples")
+    ap.add_argument("--todas", action="store_true",
+                    help="usa todas as imagens de validacao, sem selecao")
+    ap.add_argument("--modelo", choices=sorted(MODELOS), action="append",
+                    help="roda so este modelo (pode repetir); por padrao roda os dois")
     args = ap.parse_args()
 
     pares = caminhos_val(args.data)
-    sel = escolher(pares, args.n)
-    print(f"\n  {len(sel)} imagens de validacao escolhidas de {len(pares)}\n")
+    if args.todas or args.n <= 0:
+        sel = pares
+        print(f"\n  todas as {len(sel)} imagens de validacao\n")
+    else:
+        sel = escolher(pares, args.n)
+        print(f"\n  {len(sel)} imagens de validacao escolhidas de {len(pares)}\n")
 
-    for nome, cfg in MODELOS.items():
+    alvos = args.modelo or list(MODELOS)
+    for nome in alvos:
+        cfg = MODELOS[nome]
         pesos = Path(cfg["pesos"])
         if not pesos.exists():
             print(f"  pulando {nome}: {pesos} nao existe")
