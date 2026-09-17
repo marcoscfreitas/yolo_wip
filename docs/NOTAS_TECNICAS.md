@@ -166,26 +166,83 @@ de `person` em ~29 imagens. Qualquer experimento precisa mover o `person` mais
 de 8 pontos para ser detectável — todas as discussões anteriores sobre `person`
 estavam dentro do ruído.
 
-### A resolução de inferência preferida difere por classe
+### `load` prefere 1280; `person` não tem preferência estabelecida
 
-Sweep do `last.pt` de cada modelo:
+Sweep dos `best.pt`, que são os checkpoints em uso (ver adiante):
 
-| modelo | imgsz | load mAP50 | person mAP50 | person máscara |
-|---|---|---|---|---|
-| control_1280 | **1280** | 0,560 | 0,465 | 0,387 |
-| control_1280 | 1600 | 0,535 | 0,467 | 0,465 |
-| control_1280 | **1792** | 0,539 | **0,482** | **0,467** |
-| res_1408 | **1280** | **0,644** | 0,383 | 0,344 |
-| res_1408 | 1600 | 0,610 | 0,395 | 0,405 |
-| res_1408 | 1792 | 0,611 | 0,333 | 0,337 |
+| modelo | imgsz | load mAP50 | load mAP50-95 | person mAP50 | person mAP50-95 |
+|---|---|---|---|---|---|
+| res_1408 | **1280** | **0,662** | **0,543** | 0,389 | 0,203 |
+| res_1408 | 1408 | 0,648 | 0,536 | **0,397** | **0,224** |
+| res_1408 | 1600 | 0,614 | 0,506 | 0,383 | **0,224** |
+| res_1408 | 1792 | 0,595 | 0,490 | 0,351 | 0,197 |
+| control_1280 | **1280** | **0,574** | **0,479** | **0,490** | 0,261 |
+| control_1280 | 1408 | 0,567 | 0,476 | 0,457 | **0,267** |
+| control_1280 | 1600 | 0,543 | 0,456 | 0,449 | 0,266 |
+| control_1280 | 1792 | 0,543 | 0,454 | 0,467 | **0,267** |
 
-`load` é melhor em **1280 nos dois modelos**; `person` na resolução mais alta,
-**nos dois**. Faz sentido: cargas são grandes e ampliar demais as tira da escala
-de treino; pessoas têm 20 px e ampliar as traz para a faixa detectável.
+**`load` em 1280 é um achado robusto:** vale nos dois modelos, nos dois
+checkpoints (`best` e `last`), e a queda é monótona conforme a resolução sobe —
+6,7 pontos do melhor ao pior no res_1408, mais de 4x o piso de ruído. Cargas são
+grandes e ampliar demais as tira da escala de treino.
 
-Como o mAP é por classe, **dois passes em resoluções diferentes com roteamento
-por classe** entregam exatamente os melhores números da tabela. É o que o
-`examples.py` faz. A inferência é 14 ms, então dois passes custam 28 ms.
+**A preferência do `person` por resolução alta não se replicou.** O sweep
+anterior, feito só no `last.pt`, mostrava `person` melhor em 1792 (control) e
+1600 (res), e isso foi registrado aqui como achado. No `best.pt` o melhor cai em
+1280 (control) e 1408 (res). Todas as diferenças estão dentro do piso de ruído
+de ±0,04 — era ruído sendo lido como sinal, exatamente o que a própria seção
+alerta. Não há ganho estabelecido em subir a resolução para `person`.
+
+Consequência para o duplo passe: ele continua no `examples.py`, mas só o
+roteamento do `load` tem respaldo. O segundo passe para `person` custa 100% mais
+inferência por um ganho nominal de menos de 1 ponto, dentro do ruído. Para
+embarque, **um passe único em 1280 é a escolha defensável.**
+
+### `best.pt` é melhor que `last.pt` na resolução de embarque
+
+Avaliados em 1280:
+
+| res_1408 | load mAP50 | load mAP50-95 | load máscara 50-95 | person mAP50 | agregado |
+|---|---|---|---|---|---|
+| **`best.pt`** | **0,662** | **0,543** | **0,503** | **0,389** | **0,525 / 0,373** |
+| `last.pt` | 0,644 | 0,532 | 0,496 | 0,383 | 0,514 / 0,366 |
+
+O `best.pt` ganha em todas as métricas, embora a margem (1,8 ponto no `load`)
+esteja na fronteira do piso de ruído. **A desconfiança histórica do `best.pt` não
+vale mais:** ela vinha do fitness ser a média das classes, que o `pipe` com 3
+instâncias movia sozinho. Depois do resplit o `pipe` tem 0 instâncias na
+validação, então o fitness é a média de `load` e `person` apenas, e a seleção
+está limpa.
+
+Ressalva que permanece: o `best.pt` é escolhido nas mesmas 38 imagens em que é
+reportado, então parte da vantagem é ajuste ao ruído da validação — viés que o
+`last.pt` não tem. Na prática os dois são equivalentes; o `best.pt` é preferido
+por estar nominalmente à frente em tudo.
+
+### `rect=True` na inferência
+
+A câmera é 1920×1080 e a rede exige dimensões múltiplas de 32. Com `rect`, o
+letterbox usa o retângulo mínimo: `imgsz=1280` vira **1280×736**. Sem `rect`,
+vira **1280×1280** — 1,74x os pixels, em barras cinzas.
+
+`res_1408/last.pt` em 1280, mesma val:
+
+| | load mAP50 | load mAP50-95 | load máscara 50-95 | person mAP50 | latência |
+|---|---|---|---|---|---|
+| `rect=True` | **0,644** | **0,532** | **0,496** | 0,383 | **23,0 ms** |
+| `rect=False` | 0,621 | 0,516 | 0,481 | 0,397 | 29,0 ms |
+
+Perde ~2 pontos de `load` (acima do piso de ±0,015) e fica 26% mais lento. Na
+RX 7600 a diferença de latência fica bem abaixo da razão de pixels porque pré e
+pós-processamento não escalam com a área; em hardware mais fraco deve se
+aproximar dos 74%.
+
+**Não é preciso fazer nada para ter isso:** `model.predict()` já força
+`rect=True` por padrão (`engine/model.py:507`), apesar de `default.yaml` trazer
+`rect: False`. O cuidado só aparece ao **exportar para TensorRT/ONNX**:
+`pre_transform` (`engine/predictor.py`) desliga o retângulo automático para
+formatos que não são `pt`, a menos que `dynamic=True`, e o engine é compilado com
+shape fixa. Exportar com `imgsz=[736, 1280]`, nunca `imgsz=1280`.
 
 ---
 

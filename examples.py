@@ -9,13 +9,19 @@ cor da classe, o contorno e a confianca. Nada de anotacao sobreposta.
 A contagem detectado/anotado fica no resumo.txt de cada pasta.
 
 DUPLO PASSE POR RESOLUCAO
-O sweep mostrou que as classes preferem resolucoes opostas de inferencia, e isso
-se repetiu nos dois modelos treinados de forma independente:
-    load   -> melhor em 1280 (subir a resolucao piora: sai da escala de treino)
-    person -> melhor na mais alta (traz as pessoas de ~20 px para a faixa detectavel)
-Entao cada modelo roda dois passes e cada classe vem do passe onde ela e melhor.
-Como o mAP e calculado por classe de forma independente, isso e exatamente o
-ganho que a tabela do sweep media.
+`load` prefere 1280 de forma robusta: vale nos dois modelos, nos dois
+checkpoints (best e last) e cai de forma monotona conforme a resolucao sobe
+(res_1408/best.pt: 0,662 em 1280 -> 0,595 em 1792). Cargas sao grandes e ampliar
+demais as tira da escala de treino.
+
+`person` NAO tem preferencia estabelecida. O sweep do `last.pt` sugeria a
+resolucao mais alta nos dois modelos, mas isso nao se repetiu no `best.pt`: ali
+o melhor cai em 1408 (res) e 1280 (control), e todas as diferencas ficam dentro
+do piso de ruido de +-0,04. Ver docs/NOTAS_TECNICAS.md secao 4.
+
+Entao cada classe ainda vem do passe onde ela e nominalmente melhor, mas so o
+roteamento do `load` tem respaldo. Quando as duas resolucoes coincidem o segundo
+passe e pulado.
 """
 
 import argparse
@@ -33,10 +39,10 @@ NOMES = {0: "load", 1: "person", 2: "pipe"}
 BRANCO = (255, 255, 255)
 
 MODELOS = {
-    "res_1408": dict(pesos="runs/segment/treinamentos/res_1408/weights/last.pt",
-                     imgsz_load=1280, imgsz_person=1600),
-    "control_1280": dict(pesos="runs/segment/treinamentos/control_1280/weights/last.pt",
-                         imgsz_load=1280, imgsz_person=1792),
+    "res_1408": dict(pesos="runs/segment/treinamentos/res_1408/weights/best.pt",
+                     imgsz_load=1280, imgsz_person=1408),
+    "control_1280": dict(pesos="runs/segment/treinamentos/control_1280/weights/best.pt",
+                         imgsz_load=1280, imgsz_person=1280),
 }
 
 
@@ -176,8 +182,11 @@ def main() -> None:
         for img, lbl in sel:
             base = cv2.imread(str(img))
             gt = ler_gt(lbl, base.shape[1], base.shape[0])
-            pred = (prever(modelo, img, cfg["imgsz_load"], [0, 2], args.conf)
-                    + prever(modelo, img, cfg["imgsz_person"], [1], args.conf))
+            if cfg["imgsz_person"] == cfg["imgsz_load"]:
+                pred = prever(modelo, img, cfg["imgsz_load"], [0, 1, 2], args.conf)
+            else:
+                pred = (prever(modelo, img, cfg["imgsz_load"], [0, 2], args.conf)
+                        + prever(modelo, img, cfg["imgsz_person"], [1], args.conf))
             cv2.imwrite(str(destino / img.name), desenhar(img, pred),
                         [cv2.IMWRITE_JPEG_QUALITY, 88])
             for c, _ in gt:

@@ -60,10 +60,25 @@ def contar_instancias(data_yaml: str, split: str) -> Counter:
 
 
 def avaliar(pesos: str, data: str, imgsz: int, split: str, rect: bool):
+    """Avalia um checkpoint. As metricas voltam no objeto; nada vai para disco.
+
+    `exist_ok=True` existe so para conter a sujeira: o validator faz
+    `save_dir.mkdir()` incondicional (`engine/validator.py:137`), antes de saber
+    que `plots=False` e nao ha nada a escrever, e sem `exist_ok` o `get_save_dir`
+    incrementa o caminho a cada chamada. Sem isso, cada par
+    (checkpoint x resolucao) deixa uma pasta vazia `runs/segment/val-N` — um
+    sweep de 2 checkpoints rende 8 delas.
+
+    Nao passar `project`: um valor relativo NAO e relativo ao cwd, vira
+    `SETTINGS["runs_dir"]/<task>/<project>` (`cfg/__init__.py:525-530`), entao
+    `project="runs/segment"` aninharia em `runs/segment/runs/segment/`. Omitido,
+    a base ja e `runs/segment`.
+    """
     modelo = YOLO(pesos)
     return modelo.val(
         data=data, imgsz=imgsz, split=split, rect=rect,
         batch=1, plots=False, verbose=False,
+        name="val", exist_ok=True,
     )
 
 
