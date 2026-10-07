@@ -1,0 +1,54 @@
+metadata:
+  name: pth-icrane-yolo-seg
+  namespace: cvat
+  annotations:
+    name: iCrane YOLO seg (lanca)
+    type: detector
+    framework: pytorch
+    spec: |
+      [
+        { "id": 0, "name": "load",   "type": "polygon" },
+        { "id": 1, "name": "person", "type": "polygon" },
+        { "id": 2, "name": "pipe",   "type": "polygon" }
+      ]
+
+spec:
+  description: YOLO26n-seg iCrane, camera da ponta da lanca (load, person, pipe)
+  runtime: 'python:3.10'
+  handler: main:handler
+  eventTimeout: 60s
+
+  build:
+    image: cvat.pth.icrane.yolo
+    baseImage: ubuntu:22.04
+    directives:
+      preCopy:
+        - kind: ENV
+          value: DEBIAN_FRONTEND=noninteractive
+        - kind: RUN
+          value: apt-get update && apt-get install -y python3-pip curl libgl1 libglib2.0-0 && ln -sf /usr/bin/python3 /usr/local/bin/python
+        - kind: RUN
+          value: pip install opencv-python-headless pillow
+        - kind: RUN
+          value: pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu121 && pip install ultralytics==8.4.121
+        - kind: WORKDIR
+          value: /opt/nuclio
+
+  triggers:
+    myHttpTrigger:
+      maxWorkers: 1
+      kind: 'http'
+      workerAvailabilityTimeoutMilliseconds: 10000
+      attributes:
+        maxRequestBodySize: 33554432 # 32MB
+
+  resources:
+    limits:
+      nvidia.com/gpu: 1
+
+  platform:
+    attributes:
+      restartPolicy:
+        name: always
+        maximumRetryCount: 3
+      mountMode: volume
